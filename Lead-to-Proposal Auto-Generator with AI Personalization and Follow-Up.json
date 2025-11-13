@@ -1,0 +1,610 @@
+{
+  "name": "Lead-to-Proposal Auto-Generator with AI Personalization and Follow-Up",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "12X1esNd0BZ1sAWy_ndFqz9NFgTyAAneqyH0BLtmVHHk",
+          "mode": "list",
+          "cachedResultName": "Proposal Request Form (Responses)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12X1esNd0BZ1sAWy_ndFqz9NFgTyAAneqyH0BLtmVHHk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1435444146,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12X1esNd0BZ1sAWy_ndFqz9NFgTyAAneqyH0BLtmVHHk/edit#gid=1435444146"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "44949631-744c-477a-bfcf-3b5feb1e2ff6",
+      "name": "New Form Response",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        752,
+        96
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "dxMpuWMxFUZhro1A",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "templateFolderId",
+              "value": "1F2abCDeFGHijkLmNOPQRstUvWxYZ1234",
+              "type": "string"
+            },
+            {
+              "name": "aboutUsText",
+              "value": "We are Mukesh Automations, a next-gen AI & automation consultancy helping businesses simplify operations through data-driven workflows, smart integrations, and scalable systems.",
+              "type": "string"
+            },
+            {
+              "name": "defaultDeliverables",
+              "value": "• Workflow setup\n• Integration testing\n• Handover documentation",
+              "type": "string"
+            },
+            {
+              "name": "signatureLine",
+              "value": "— Mukesh, Founder @ Mukesh Automations",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Workflow Configuration1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        96
+      ],
+      "id": "c5a0ab9c-79d0-44b1-9baa-3c616bb4d800"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "client_name",
+              "value": "={{ $json['What’s your full name?'] }}",
+              "type": "string"
+            },
+            {
+              "name": "client_email",
+              "value": "={{ $json['What’s your best email to send your proposal to?'] }}",
+              "type": "string"
+            },
+            {
+              "name": "company_name",
+              "value": "={{ $json['What’s your company or brand name?'] }}",
+              "type": "string"
+            },
+            {
+              "name": "business_type",
+              "value": "={{ $json['What type of business do you run?'] }}",
+              "type": "string"
+            },
+            {
+              "name": "project_description",
+              "value": "={{ $json['Briefly describe what you need or what problem you’re facing.'] }}",
+              "type": "string"
+            },
+            {
+              "name": "budget",
+              "value": "={{ $json['Do you have a budget range in mind?'] }}",
+              "type": "string"
+            },
+            {
+              "name": "timeline",
+              "value": "={{ $json['When do you need this done?'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "name": "Normalize Form Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1184,
+        96
+      ],
+      "id": "73d1ede9-aefa-4b67-9068-cbd9143e9edc"
+    },
+    {
+      "parameters": {
+        "operation": "copy",
+        "fileId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "1wE2nmJNyx7fcktOIXCeo1PKjYP0qTbAwDL9jgh4kYo4"
+        },
+        "name": "={{ 'Proposal_' + $('Normalize Form Data').item.json.client_name.replace(/\\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] }}",
+        "options": {}
+      },
+      "name": "Copy Proposal Template1",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1680,
+        96
+      ],
+      "id": "d499b278-ba69-4b1b-a573-8043b6c28eea",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "iXN9lRKbU4SlaFwN",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Get safe references for each upstream node ---\nconst getNodeData = (name) => {\n  try {\n    return $node[name].item.json || {};\n  } catch (err) {\n    return {};\n  }\n};\n\n// --- Pull upstream node outputs ---\nconst normalized = getNodeData('Normalize Form Data1');\nconst config = getNodeData('Workflow Configuration');\nconst aiOutput = getNodeData('Message a model');\nconst copiedDoc = $input?.item?.json || {};\n\n// --- Parse Gemini output safely ---\nlet aiIntro = '';\ntry {\n  const rawText = aiOutput.content?.parts?.[0]?.text || '';\n  const parsed = JSON.parse(rawText);\n  aiIntro = parsed.proposal_introduction || rawText;\n} catch {\n  aiIntro = aiOutput.content?.parts?.[0]?.text || 'As a leading automation partner, we are excited to help optimize your process.';\n}\n\n// --- Build deliverables list ---\nconst deliverables =\n  normalized.deliverables ||\n  config.defaultDeliverables ||\n  'TBD';\n\nconst deliverablesFormatted = deliverables\n  .split('\\n')\n  .map((d) => `• ${d.trim()}`)\n  .join('\\n');\n\n// --- Return payload for Docs Replace node ---\nreturn {\n  json: {\n    documentId: copiedDoc.id || '',\n    replacements: {\n      '{{client_name}}': normalized.client_name || '',\n      '{{company_name}}': normalized.company_name || '',\n      '{{business_type}}': normalized.business_type || '',\n      '{{proposal_intro}}': aiIntro,\n      '{{project_description}}': normalized.project_description || '',\n      '{{deliverables}}': deliverablesFormatted,\n      '{{timeline}}': normalized.timeline || '',\n      '{{budget}}': normalized.budget || '',\n      '{{about_us}}': config.aboutUsText || '',\n      '{{signatureLine}}': config.signatureLine || '',\n      '{{date}}': new Date().toLocaleDateString()\n    }\n  }\n};\n"
+      },
+      "name": "Code in JavaScript1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        96
+      ],
+      "id": "94ae926f-2439-40f4-9834-33cb5fb4c8ba"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $('Copy Proposal Template1').item.json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $('Message a model').item.json.content.parts[0].text }}"
+            }
+          ]
+        }
+      },
+      "name": "Replace Placeholders in Doc1",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        2064,
+        96
+      ],
+      "id": "4708e2f1-5bff-4ecc-a005-c36e14f7371d",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "cjWxzTb7Kh2AnM0r",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{ $json.documentId }}",
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "name": "Export Doc to PDF1",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2288,
+        96
+      ],
+      "id": "96860ed9-09bd-44c9-8447-863939495a87",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "iXN9lRKbU4SlaFwN",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Normalize Form Data').item.json.client_email }}",
+        "subject": "={{ 'Your Proposal - ' + $('Normalize Form Data').item.json.client_name }}",
+        "message": "={{ 'Hi ' + $('Normalize Form Data').item.json.client_name + ',\\n\\nThank you for your interest! Please find your personalized proposal attached.\\n\\nBest,\\nMukesh Automations Team' }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "name": "Send Proposal Email1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2512,
+        96
+      ],
+      "id": "8c9b10df-f4ec-4d21-a17a-f06464b1529f",
+      "webhookId": "b591b53f-9c6c-450d-be03-ce5580f032ce",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "naWXA9C1GteFopoZ",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "12X1esNd0BZ1sAWy_ndFqz9NFgTyAAneqyH0BLtmVHHk",
+          "mode": "list",
+          "cachedResultName": "Proposal Request Form (Responses)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12X1esNd0BZ1sAWy_ndFqz9NFgTyAAneqyH0BLtmVHHk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1435444146,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/12X1esNd0BZ1sAWy_ndFqz9NFgTyAAneqyH0BLtmVHHk/edit#gid=1435444146"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": 0,
+            "Timestamp": "={{ $('New Form Response').item.json.Timestamp }}",
+            "proposal_status": "={{ $json.labelIds[0] }}",
+            "sent_at": "={{ $json.id }}",
+            "proposal_pdf_link": "={{ $('Export Doc to PDF1').item.json.documentId }}",
+            "proposal_link": "={{ $('Replace Placeholders in Doc1').item.json.documentId }}"
+          },
+          "matchingColumns": [
+            "Timestamp"
+          ],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "What’s your full name?",
+              "displayName": "What’s your full name?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "What’s your best email to send your proposal to?",
+              "displayName": "What’s your best email to send your proposal to?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "What’s your company or brand name?",
+              "displayName": "What’s your company or brand name?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "What type of business do you run?",
+              "displayName": "What type of business do you run?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "What do you need help with?",
+              "displayName": "What do you need help with?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Briefly describe what you need or what problem you’re facing.",
+              "displayName": "Briefly describe what you need or what problem you’re facing.",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "When do you need this done?",
+              "displayName": "When do you need this done?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Do you have a budget range in mind?",
+              "displayName": "Do you have a budget range in mind?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Anything else I should know before preparing your proposal?",
+              "displayName": "Anything else I should know before preparing your proposal?",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "proposal_link",
+              "displayName": "proposal_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "proposal_pdf_link",
+              "displayName": "proposal_pdf_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "proposal_status",
+              "displayName": "proposal_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent_at",
+              "displayName": "sent_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Log Proposal Status1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2736,
+        96
+      ],
+      "id": "c6665cf5-96ab-4e47-b0e7-91dec9f45c02",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4imvPQ4nmeQps7Q0",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro-preview-03-25",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro-preview-03-25"
+        },
+        "messages": {
+          "values": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "name": "Message a model",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        96
+      ],
+      "id": "34c6b8b8-7a2a-4d37-afba-92e0b4b6dab4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "fxAroahKzqPetXC8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "New Form Response": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration1": {
+      "main": [
+        [
+          {
+            "node": "Normalize Form Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Form Data": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Proposal Template1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Replace Placeholders in Doc1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replace Placeholders in Doc1": {
+      "main": [
+        [
+          {
+            "node": "Export Doc to PDF1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Doc to PDF1": {
+      "main": [
+        [
+          {
+            "node": "Send Proposal Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Proposal Email1": {
+      "main": [
+        [
+          {
+            "node": "Log Proposal Status1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Copy Proposal Template1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "4o7UQPdCOsfFYDXL"
+  },
+  "versionId": "0e961c5c-0927-4043-a7f8-48beae6f54f4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7710ff9f153d410d5b117487f4996b34b2541cd8b5c6e7f9884fa3099093407b"
+  },
+  "id": "4o7UQPdCOsfFYDXL",
+  "tags": []
+}
